@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>AI Models Comparison</title>
+    <meta
+      name="description"
+      content="A modern, readable comparison of popular AI models across UI/UX, game design, debugging, general coding, creativity, and speed/cost."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="topbar">
+      <div class="container topbarInner">
+        <a class="brand" href="#top" aria-label="AI Models Comparison Home">
+          <span class="logo" aria-hidden="true"></span>
+          <span class="brandText">
+            <strong>AI Models Comparison</strong>
+            <span>Fast, readable benchmarks (opinionated)</span>
+          </span>
+        </a>
+
+        <nav class="nav" id="nav" aria-label="Section navigation"></nav>
+
+        <div class="controls">
+          <label class="input" aria-label="Search models and text">
+            <input
+              id="search"
+              type="search"
+              placeholder="Search a model (e.g., GPT-5.2, Claude Sonnet, Codex Max)…"
+              autocomplete="off"
+            />
+            <kbd>Ctrl K</kbd>
+          </label>
+          <button class="btn" id="clear" type="button">Clear</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="container heroGrid">
+          <div class="card heroMain">
+            <h1 class="title">Compare AI models by the work you actually do</h1>
+            <p class="subtitle">
+              This page turns your notes into a clean, skimmable dashboard. Use
+              search to highlight a model across every category.
+            </p>
+
+            <div class="heroMeta" role="list">
+              <span class="pill" role="listitem">
+                Last updated: <strong id="updated">—</strong>
+              </span>
+              <span class="pill" role="listitem">
+                Tip: <strong>Ctrl + K</strong> focuses search
+              </span>
+              <span class="pill" role="listitem">
+                Tables are horizontal-scrollable on mobile
+              </span>
+            </div>
+          </div>
+
+          <aside class="card heroSide" aria-label="Models included">
+            <div class="h3">Models Included</div>
+            <ul class="modelList" id="modelsList"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container" id="overall"></div>
+      </section>
+
+      <div class="container" id="sections"></div>
+
+      <footer class="footer">
+        <div class="container footerInner">
+          <div>
+            Built as a static site from your dataset in
+            <span style="font-family: var(--mono)">AI_MODELS_COMPARISON_DATA.md</span>.
+          </div>
+          <div class="smallLinks">
+            <a href="#top">Back to top</a>
+            <a href="./AI_MODELS_COMPARISON_DATA.md" target="_blank" rel="noreferrer"
+              >Source data</a
+            >
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
