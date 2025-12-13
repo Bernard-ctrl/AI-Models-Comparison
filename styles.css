@@ -315,6 +315,13 @@ input[type="search"]::-moz-search-clear {
   max-width: 600px;
 }
 
+.disclaimer {
+  margin: 16px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  max-width: 720px;
+}
+
 .heroMeta {
   display: flex;
   gap: 12px;
@@ -556,7 +563,24 @@ tr:hover td {
 .footerInner {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.footerCopy {
+  max-width: 720px;
+}
+
+.footerTitle {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.fineprint {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .smallLinks {
@@ -585,5 +609,10 @@ tr:hover td {
   
   .title {
     font-size: 32px;
+  }
+
+  .footerInner {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

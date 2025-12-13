@@ -1,6 +1,6 @@
 # AI-Models-Comparison
 
-Static comparison website built from the dataset in [AI_MODELS_COMPARISON_DATA.md](AI_MODELS_COMPARISON_DATA.md).
+Public, static comparison site built from the dataset in [AI_MODELS_COMPARISON_DATA.md](AI_MODELS_COMPARISON_DATA.md).
 
 ## Files
 

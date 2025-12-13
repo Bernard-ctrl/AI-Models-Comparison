@@ -67,9 +67,9 @@
 
     const left = document.createElement("div");
     const h = document.createElement("h2");
-    h.textContent = "Overall Best Model per Task";
+    h.textContent = "Recommended models (quick picks)";
     const p = document.createElement("p");
-    p.textContent = "A quick shortlist when you just need a recommendation.";
+    p.textContent = "A simple starting point if you want one pick per task.";
     left.append(h, p);
 
     header.append(left);
@@ -202,7 +202,7 @@
     if (section.bestFor && section.bestFor.length) {
       const callout = document.createElement("div");
       callout.className = "callout";
-      callout.textContent = `Best picks: ${section.bestFor.join(", ")}`;
+      callout.textContent = `Recommended picks: ${section.bestFor.join(", ")}`;
       container.append(callout);
     }
 
@@ -277,7 +277,7 @@
 
   function boot() {
     if (!DATA) {
-      document.body.innerHTML = "Missing dataset: AI_MODELS_COMPARISON_DATA";
+      document.body.innerHTML = "Missing dataset: window.AI_MODELS_COMPARISON_DATA";
       return;
     }
 
