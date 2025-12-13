@@ -218,6 +218,28 @@ a:hover {
   outline: none;
 }
 
+/* Hide native search cancel (cross) to avoid duplicate controls
+   Keep the explicit Clear button for consistent accessibility and behavior */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+
+input[type="search"]::-ms-clear,
+input[type="search"]::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Firefox pseudo-elements */
+input[type="search"]::-moz-search-decoration,
+input[type="search"]::-moz-search-clear {
+  display: none;
+}
+
 .input kbd {
   background: rgba(255, 255, 255, 0.1);
   border: none;
