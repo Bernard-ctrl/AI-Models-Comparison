@@ -13,6 +13,18 @@
 
   const norm = (s) => (s ?? "").toString().trim().toLowerCase();
 
+  const LEVEL_VALUES = new Set([
+    "very high",
+    "high",
+    "medium",
+    "low",
+    "very rare",
+    "rare",
+    "sometimes",
+    "often",
+    "very often",
+  ]);
+
   function badgeFor(value) {
     const v = norm(value);
 
@@ -351,14 +363,16 @@
     attachSortControls(table, columnMeta);
     wrap.append(table);
 
-    card.append(header, wrap);
-    el.overall.append(card);
+    card.append(wrap);
+    // place the section header outside the table card so the text sits above the card
+    el.overall.append(header, card);
   }
 
   function renderNav() {
     const frag = document.createDocumentFragment();
 
     const anchors = [
+      { href: "./compare.html", label: "Compare" },
       { href: "#overall", label: "Overall" },
       ...DATA.sections.map((s) => ({ href: `#${s.id}`, label: s.title })),
     ];
@@ -425,10 +439,7 @@
           td.className = "modelCell";
           td.textContent = cell;
         } else {
-          const isLevel =
-            ["very high", "high", "medium", "low", "very rare", "rare", "sometimes", "often", "very often"].includes(
-              norm(cell)
-            );
+          const isLevel = LEVEL_VALUES.has(norm(cell));
 
           if (isLevel) td.append(badgeFor(cell));
           else td.textContent = cell;

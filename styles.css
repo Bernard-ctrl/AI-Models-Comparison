@@ -173,22 +173,32 @@ a:hover {
   display: flex;
   gap: 6px;
   justify-self: start;
+  align-items: center;
 }
 
 .nav a {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  box-sizing: border-box;
   color: var(--text-secondary);
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none !important;
-  transition: all 0.2s ease;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   border: 1px solid transparent;
 }
 
 .nav a:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* Ensure header clips any accidental overflow from tall hover states */
+.topbar {
+  overflow: hidden;
 }
 
 /* Controls */
@@ -428,6 +438,91 @@ input[type="search"]::-moz-search-clear {
   color: var(--accent);
   font-size: 14px;
   font-weight: 500;
+}
+
+/* Compare */
+.compareCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.compareControls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.compareSelect {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text-primary);
+  padding: 10px 40px 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path fill='%238b949e' d='M6 8L0 0h12z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.compareSelect:focus,
+.compareSelect:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+.compareActions {
+  display: flex;
+  gap: 8px;
+}
+
+.compareResults {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.compareSection {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.compareSectionHeader h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.compareSectionHeader p {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.compareEmpty {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.metricCell {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.compareDiff td {
+  background: rgba(88, 166, 255, 0.06);
 }
 
 /* Tables */
