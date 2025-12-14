@@ -38,6 +38,251 @@
     return span;
   }
 
+  function toTitleCase(value) {
+    return value.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  const SCALE_VALUES = {
+    quality: ["very high", "high", "medium", "low"],
+    frequency: ["very often", "often", "sometimes", "rare", "very rare"],
+  };
+
+  const SCALE_PRIORITY = Object.fromEntries(
+    Object.entries(SCALE_VALUES).map(([key, values]) => [
+      key,
+      values.reduce((acc, value, index) => {
+        acc[value] = index;
+        return acc;
+      }, {}),
+    ])
+  );
+
+  const SCALE_SORT_OPTIONS = Object.fromEntries(
+    Object.entries(SCALE_VALUES).map(([key, values]) => [
+      key,
+      values.map((value) => ({ label: toTitleCase(value), value })).concat({ label: "Reset order", value: "reset" }),
+    ])
+  );
+
+  const ALPHA_SORT_OPTIONS = [
+    { label: "A to Z", value: "asc" },
+    { label: "Z to A", value: "desc" },
+    { label: "Reset order", value: "reset" },
+  ];
+
+  const SORT_MAX_RANK = 1e6;
+  let activeSortMenu = null;
+
+  function detectScale(values) {
+    if (!values.length) return "alpha";
+    const allQuality = values.every((v) => SCALE_PRIORITY.quality.hasOwnProperty(v));
+    if (allQuality) return "quality";
+    const allFrequency = values.every((v) => SCALE_PRIORITY.frequency.hasOwnProperty(v));
+    if (allFrequency) return "frequency";
+    return "alpha";
+  }
+
+  function getColumnMeta(columns, rows) {
+    if (!columns) return [];
+    const safeRows = rows ?? [];
+    return columns.map((_, idx) => {
+      if (idx === 0) return { type: "alpha" };
+      const values = safeRows
+        .map((row) => norm(row[idx]))
+        .filter(Boolean);
+      const type = detectScale(values);
+      return { type };
+    });
+  }
+
+  function closeActiveSortMenu() {
+    if (!activeSortMenu) return;
+    const { menu, toggle, origin } = activeSortMenu;
+    if (menu) {
+      menu.hidden = true;
+      menu.classList.remove("is-open");
+      // reset any absolute positioning applied when moved to body
+      menu.style.position = "";
+      menu.style.left = "";
+      menu.style.top = "";
+      menu.style.right = "";
+      menu.style.visibility = "";
+      menu.style.width = "";
+      menu.style.minWidth = "";
+      menu.style.maxWidth = "";
+      menu.style.display = "";
+      menu.style.zIndex = "";
+      // move back into origin header to keep DOM order
+      try {
+        if (origin) origin.append(menu);
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (toggle) {
+      toggle.classList.remove("is-active");
+      toggle.setAttribute("aria-expanded", "false");
+    }
+    activeSortMenu = null;
+  }
+
+  function compareAlphaRows(a, b, columnIndex, direction) {
+    const aText = norm(a.cells[columnIndex]?.textContent);
+    const bText = norm(b.cells[columnIndex]?.textContent);
+    if (aText === bText) return 0;
+    const comparison = aText.localeCompare(bText, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+    return direction === "desc" ? -comparison : comparison;
+  }
+
+  function compareScaleRows(a, b, columnIndex, priorityMap, targetLevel) {
+    const aText = norm(a.cells[columnIndex]?.textContent);
+    const bText = norm(b.cells[columnIndex]?.textContent);
+    const aRank = priorityMap.hasOwnProperty(aText) ? priorityMap[aText] : SORT_MAX_RANK;
+    const bRank = priorityMap.hasOwnProperty(bText) ? priorityMap[bText] : SORT_MAX_RANK;
+    const targetRank = priorityMap[targetLevel];
+    const aDiff = targetRank !== undefined ? Math.abs(aRank - targetRank) : aRank;
+    const bDiff = targetRank !== undefined ? Math.abs(bRank - targetRank) : bRank;
+
+    if (aDiff !== bDiff) return aDiff - bDiff;
+    return aRank - bRank;
+  }
+
+  function applySortToTable(table, columnIndex, columnMeta, optionValue) {
+    const tbody = table.tBodies[0];
+    if (!tbody) return;
+    const baseRows = table.__initialRows ?? Array.from(tbody.rows);
+    const rows = optionValue === "reset" ? baseRows : [...baseRows];
+
+    if (optionValue === "reset") {
+      tbody.append(...rows);
+      return;
+    }
+
+    if (columnMeta.type === "quality" || columnMeta.type === "frequency") {
+      const priority = SCALE_PRIORITY[columnMeta.type];
+      rows.sort((a, b) => compareScaleRows(a, b, columnIndex, priority, optionValue));
+    } else {
+      rows.sort((a, b) => compareAlphaRows(a, b, columnIndex, optionValue));
+    }
+
+    tbody.append(...rows);
+  }
+
+  function attachSortControls(table, columnMeta = []) {
+    const tbody = table.tBodies[0];
+    if (!tbody) return;
+    if (!table.__initialRows) {
+      table.__initialRows = Array.from(tbody.rows);
+    }
+
+    const headers = table.querySelectorAll("thead th");
+    headers.forEach((th, index) => {
+      const meta = columnMeta[index] ?? { type: "alpha" };
+      const labelText = th.textContent.trim();
+      th.textContent = "";
+
+      const content = document.createElement("div");
+      content.className = "thContent";
+
+      const label = document.createElement("span");
+      label.className = "thLabel";
+      label.textContent = labelText;
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "sortToggle";
+      toggle.setAttribute("aria-haspopup", "menu");
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", `Sort ${labelText}`);
+      const chevron = document.createElement("span");
+      chevron.className = "sortChevron";
+      toggle.append(chevron);
+
+      content.append(label, toggle);
+      th.append(content);
+
+      const menu = document.createElement("div");
+      menu.className = "sortMenu";
+      menu.setAttribute("role", "menu");
+      menu.dataset.columnIndex = index;
+      menu.dataset.columnType = meta.type;
+      menu.hidden = true;
+
+      const options = meta.type === "quality"
+        ? SCALE_SORT_OPTIONS.quality
+        : meta.type === "frequency"
+          ? SCALE_SORT_OPTIONS.frequency
+          : ALPHA_SORT_OPTIONS;
+      options.forEach((opt) => {
+        const optionButton = document.createElement("button");
+        optionButton.type = "button";
+        optionButton.className = "sortOption";
+        optionButton.setAttribute("role", "menuitem");
+        optionButton.dataset.action = opt.value;
+        optionButton.textContent = opt.label;
+        optionButton.addEventListener("click", () => {
+          applySortToTable(table, index, meta, opt.value);
+          closeActiveSortMenu();
+        });
+        menu.append(optionButton);
+      });
+
+      th.append(menu);
+
+      toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const isOpen = menu.classList.contains("is-open");
+        if (isOpen) {
+          closeActiveSortMenu();
+          return;
+        }
+        closeActiveSortMenu();
+        // Move menu to document.body to avoid stacking-context clipping
+        try {
+          console.log("sort: opening menu", index, meta.type);
+          document.body.append(menu);
+          // remove CSS right so left/width don't produce a stretched width
+          menu.style.right = "";
+          // make invisible but renderable so we can measure intrinsic content width
+          menu.style.visibility = "hidden";
+          menu.hidden = false;
+          const rect = toggle.getBoundingClientRect();
+          menu.style.position = "absolute";
+          // measure the content width (scrollWidth) then clamp to viewport and a sane max
+          const measured = menu.scrollWidth || menu.offsetWidth || 120;
+          const viewportMax = Math.max(120, document.documentElement.clientWidth - 32);
+          const maxInline = 260;
+          const desiredWidth = Math.min(measured, Math.min(viewportMax, maxInline));
+          menu.style.width = `${desiredWidth}px`;
+          const pageRight = rect.right + window.scrollX;
+          let left = pageRight - desiredWidth;
+          const minLeft = 8 + window.scrollX;
+          const maxLeft = document.documentElement.scrollWidth - desiredWidth - 8;
+          left = Math.min(Math.max(left, minLeft), Math.max(minLeft, maxLeft));
+          menu.style.left = `${left}px`;
+          menu.style.top = `${rect.bottom + window.scrollY + 8}px`;
+          // now reveal and bring to front
+          menu.style.visibility = "";
+          menu.style.display = "flex";
+          menu.style.zIndex = "9999";
+        } catch (e) {
+          console.error("sort: failed to position menu", e);
+          // fallback: leave menu in-place
+          menu.hidden = false;
+          menu.style.display = "flex";
+          menu.style.zIndex = "9999";
+        }
+        menu.classList.add("is-open");
+        toggle.classList.add("is-active");
+        toggle.setAttribute("aria-expanded", "true");
+        activeSortMenu = { menu, toggle, origin: th };
+      });
+    });
+  }
+
   function renderModelsIncluded() {
     const frag = document.createDocumentFragment();
     DATA.modelsIncluded.forEach((name, i) => {
@@ -79,6 +324,7 @@
 
     const table = document.createElement("table");
     table.setAttribute("aria-label", "Overall best model per task");
+    const columnMeta = getColumnMeta(DATA.overallBest.columns, DATA.overallBest.rows);
 
     const thead = document.createElement("thead");
     const trh = document.createElement("tr");
@@ -102,6 +348,7 @@
     });
 
     table.append(thead, tbody);
+    attachSortControls(table, columnMeta);
     wrap.append(table);
 
     card.append(header, wrap);
@@ -152,6 +399,7 @@
     const table = document.createElement("table");
     table.dataset.sectionId = section.id;
     table.setAttribute("aria-label", `${section.title} comparison table`);
+    const columnMeta = getColumnMeta(section.columns, section.rows);
 
     const thead = document.createElement("thead");
     const trh = document.createElement("tr");
@@ -193,6 +441,7 @@
     });
 
     table.append(thead, tbody);
+    attachSortControls(table, columnMeta);
     wrap.append(table);
 
     card.append(wrap);
@@ -289,6 +538,12 @@
 
     if (el.updated) el.updated.textContent = DATA.lastUpdated;
   }
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".sortMenu") && !event.target.closest(".sortToggle")) {
+      closeActiveSortMenu();
+    }
+  });
 
   boot();
 })();
