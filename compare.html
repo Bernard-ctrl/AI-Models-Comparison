@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>AI Models Comparison – Compare</title>
+    <meta
+      name="description"
+      content="Side-by-side comparison of popular AI models across UI/UX, game design, debugging, coding, creativity, and speed/cost."
+    />
+    <meta name="robots" content="index,follow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <meta name="theme-color" content="#0f1117" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="topbar">
+      <div class="container topbarInner">
+        <a class="brand" href="./index.html" aria-label="AI Models Comparison Home">
+          <span class="logo" aria-hidden="true">
+            <img src="./favicon.svg" alt="AI Models Comparison logo" />
+          </span>
+          <span class="brandText">
+            <strong>AI Models Comparison</strong>
+            <span>Public notes for choosing a model</span>
+          </span>
+        </a>
+
+        <nav class="nav" id="nav" aria-label="Section navigation"></nav>
+
+        <div class="controls">
+          <span class="pill">Compare page</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="container heroGrid">
+          <div class="card heroMain">
+            <h1 class="title">Side-by-side AI model comparison</h1>
+            <p class="subtitle">
+              Choose any two models to see their ratings across every category. Ratings come from the same dataset as the main tables.
+            </p>
+
+            <div class="heroMeta" role="list">
+              <span class="pill" role="listitem">
+                Last updated: <strong id="updated">—</strong>
+              </span>
+              <span class="pill" role="listitem">Uses the same data as the main page</span>
+            </div>
+
+            <p class="disclaimer">
+              These ratings are subjective and may change as models, pricing, and deployments evolve.
+              This site is not affiliated with any model provider.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container" id="compareRoot"></div>
+      </section>
+
+      <footer class="footer">
+        <div class="container footerInner">
+          <div class="footerCopy">
+            <div class="footerTitle">AI Models Comparison</div>
+            <div class="fineprint">
+              Data comes from a personal/hand-tested notes dataset and is intended as a starting point—not a benchmark standard.
+            </div>
+          </div>
+
+          <div class="smallLinks" aria-label="Site links">
+            <a href="./index.html">Main tables</a>
+            <a href="#top">Back to top</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script src="./data.js"></script>
+    <script src="./compare.js"></script>
+  </body>
+</html>
