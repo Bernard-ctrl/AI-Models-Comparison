@@ -8,7 +8,19 @@
   };
 
   const norm = (s) => (s ?? "").toString().trim().toLowerCase();
-  const canonicalName = (s) => norm(s).replace(/\s*\(.*?\)/g, "");
+  const displayValue = (value) => value === undefined || value === null || value === "" || value === "Not disclosed" ? "Not available" : value;
+  const canonicalName = (s) => norm(s).replace(/\s*\(.*?\)/g, "").replace(/\s+preview$/g, "");
+
+  function benchmarkEntries(model) {
+    const records = DATA.benchmarks || [];
+    const modelKeys = new Set([model.id, canonicalName(model.name), ...(model.aliases || []).map(canonicalName)]);
+    return records.filter((record) => modelKeys.has(record.modelId) || modelKeys.has(canonicalName(record.modelName || record.name)));
+  }
+
+  function benchmarkSummary(model) {
+    const records = benchmarkEntries(model);
+    return records.length ? records.map((record) => `${record.name}: ${record.score}${record.date ? ` (${record.date})` : ""}${record.source ? ` [${new URL(record.source).hostname}]` : ""}`).join("; ") : "No published score";
+  }
 
   const LEVEL_VALUES = new Set([
     "very high",
@@ -68,6 +80,9 @@
   }
 
   const MODEL_INDEX = buildModelIndex(DATA);
+  const CATALOG = (DATA.modelCatalog || []).filter((model) => model.status === "Verified");
+  const CATALOG_BY_NAME = Object.fromEntries(CATALOG.flatMap((model) => [model.name, ...(model.aliases || [])].map((name) => [canonicalName(name), model])));
+  const CATALOG_BY_ID = Object.fromEntries(CATALOG.map((model) => [model.id, model]));
 
   function createValueCell(value) {
     const td = document.createElement("td");
@@ -134,10 +149,10 @@
       placeholder.textContent = "Choose a model";
       select.append(placeholder);
 
-      DATA.modelsIncluded.forEach((name) => {
+      (DATA.modelCatalog || (DATA.modelsIncluded || []).map((name) => ({ name }))).forEach((model) => {
         const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
+        opt.value = model.name;
+        opt.textContent = model.name;
         select.append(opt);
       });
     });
@@ -164,6 +179,32 @@
     card.append(header, controls, results);
     el.root.append(card);
 
+    const queryModels = new URLSearchParams(window.location.search).get("models");
+    if (queryModels) {
+      const names = queryModels.split(",").map((id) => CATALOG_BY_ID[id]?.name).filter(Boolean);
+      if (names[0]) selectA.value = names[0];
+      if (names[1]) selectB.value = names[1];
+    }
+
+    function renderCatalogFacts(aModel, bModel) {
+      if (!aModel || !bModel) return null;
+      const wrapper = document.createElement("div");
+      wrapper.className = "compareSection catalogFacts";
+      const heading = document.createElement("h3");
+      heading.textContent = "Published model facts";
+      const note = document.createElement("p");
+      note.textContent = "Provider-reported fields where available. Unverified fields are shown as Not available.";
+      const table = document.createElement("table");
+      table.className = "compareTable";
+      const head = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      ["Field", aModel.name, bModel.name].forEach((label) => { const th = document.createElement("th"); th.textContent = label; headRow.append(th); });
+      head.append(headRow);
+      const body = document.createElement("tbody");
+      [["Provider", aModel.provider, bModel.provider], ["Region", aModel.region, bModel.region], ["Type", aModel.type, bModel.type], ["Modality", aModel.modality, bModel.modality], ["Context", aModel.context, bModel.context], ["Input / 1M tokens", aModel.input, bModel.input], ["Output / 1M tokens", aModel.output, bModel.output], ["Max output tokens", aModel.maxOutput, bModel.maxOutput], ["Benchmarks", benchmarkSummary(aModel), benchmarkSummary(bModel)], ["Availability", aModel.availability, bModel.availability], ["Reasoning", aModel.reasoning ? "Yes" : "No", bModel.reasoning ? "Yes" : "No"], ["Coding", aModel.coding ? "Yes" : "No", bModel.coding ? "Yes" : "No"], ["Tool calling", aModel.tools ? "Yes" : "No", bModel.tools ? "Yes" : "No"], ["Weights", aModel.weights, bModel.weights], ["License", aModel.license, bModel.license], ["API", aModel.api, bModel.api]].filter(([, valueA, valueB]) => valueA !== undefined || valueB !== undefined).filter(([, valueA, valueB]) => valueA !== "Not disclosed" || valueB !== "Not disclosed").forEach(([label, valueA, valueB]) => { const row = document.createElement("tr"); [label, displayValue(valueA), displayValue(valueB)].forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = value; if (index === 0) cell.className = "metricCell"; row.append(cell); }); if (norm(valueA) !== norm(valueB)) row.classList.add("compareDiff"); body.append(row); });
+      table.append(head, body); wrapper.append(heading, note, table); return wrapper;
+    }
+
     function showMessage(message) {
       results.innerHTML = "";
       const msg = document.createElement("div");
@@ -189,14 +230,16 @@
       const aData = MODEL_INDEX[aKey];
       const bData = MODEL_INDEX[bKey];
 
-      if (!aData || !bData) {
+      if (!CATALOG_BY_NAME[aKey] || !CATALOG_BY_NAME[bKey]) {
         showMessage("We could not find data for one of the selected models.");
         return;
       }
 
       const frag = document.createDocumentFragment();
+      const catalogFacts = renderCatalogFacts(CATALOG_BY_NAME[aKey], CATALOG_BY_NAME[bKey]);
+      if (catalogFacts) frag.append(catalogFacts);
 
-      DATA.sections.forEach((section) => {
+      if (aData && bData) DATA.sections.forEach((section) => {
         const aRow = aData.sections[section.id]?.row;
         const bRow = bData.sections[section.id]?.row;
         if (!aRow && !bRow) return;
@@ -237,8 +280,8 @@
           metricTd.className = "metricCell";
           metricTd.textContent = metric;
 
-          const valA = aRow ? aRow[idx + 1] : "—";
-          const valB = bRow ? bRow[idx + 1] : "—";
+          const valA = aRow ? aRow[idx + 1] : "Not available";
+          const valB = bRow ? bRow[idx + 1] : "Not available";
           const tdA = createValueCell(valA);
           const tdB = createValueCell(valB);
 
@@ -274,9 +317,9 @@
     selectA.addEventListener("change", updateResults);
     selectB.addEventListener("change", updateResults);
 
-    if (DATA.modelsIncluded.length >= 2) {
-      selectA.value = DATA.modelsIncluded[0];
-      selectB.value = DATA.modelsIncluded[1];
+    if (!selectA.value && !selectB.value && CATALOG.length >= 2) {
+      selectA.value = CATALOG[0].name;
+      selectB.value = CATALOG[1].name;
     }
 
     updateResults();

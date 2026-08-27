@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <title>AI Models Comparison</title>
-    <meta
-      name="description"
-      content="A modern, readable comparison of popular AI models across UI/UX, game design, debugging, general coding, creativity, and speed/cost."
-    />
+    <meta name="description" content="A source-linked directory for comparing AI model capabilities, context, pricing, licensing, and practical task notes." />
     <meta name="robots" content="index,follow" />
 
     <meta property="og:type" content="website" />
@@ -28,7 +25,7 @@
     <meta name="twitter:image" content="./favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./favicon.svg" />
@@ -72,8 +69,8 @@
           <div class="card heroMain">
             <h1 class="title">A practical AI model comparison for builders</h1>
             <p class="subtitle">
-              A public, opinionated snapshot of how today’s popular models perform across real tasks.
-              Use search to highlight a model (or keyword) across every table.
+              A source-linked field guide to the models people actually build with, from frontier APIs to open weights.
+              Compare context, cost, capabilities, and practical notes without losing the regional picture.
             </p>
 
             <div class="heroMeta" role="list">
@@ -84,7 +81,7 @@
                 Tip: <strong>Ctrl + K</strong>&thinsp; focuses search
               </span>
               <span class="pill" role="listitem">
-                Mobile-friendly tables
+                Global coverage
               </span>
             </div>
 
@@ -93,19 +90,39 @@
               This site is not affiliated with any model provider.
             </p>
           </div>
-
-          <aside class="card heroSide" aria-label="Models included">
-            <div class="h3">Models Included</div>
-            <ul class="modelList" id="modelsList"></ul>
-          </aside>
         </div>
       </section>
 
-      <section class="section">
-        <div class="container" id="overall"></div>
+      <section class="directorySection section" id="directory">
+        <div class="container">
+          <div class="sectionHeader directoryHeader">
+            <div>
+              <p class="eyebrow">THE MODEL INDEX</p>
+              <h2>Find the right model for the job</h2>
+              <p>Browse a compact, expandable directory. Every factual field is sourced or labeled by provider and deployment.</p>
+            </div>
+            <div class="directoryCount" id="directoryCount" aria-live="polite">—</div>
+          </div>
+          <div class="directoryTools" aria-label="Directory filters">
+            <label class="toolSearch"><span>Search directory</span><input id="directorySearch" type="search" placeholder="Model, provider, capability..." autocomplete="off" /></label>
+            <label><span>Provider</span><select id="providerFilter"><option value="">All providers</option></select></label>
+            <label><span>Region</span><select id="regionFilter"><option value="">All regions</option></select></label>
+            <label><span>Focus</span><select id="focusFilter"><option value="">Any focus</option><option value="reasoning">Reasoning</option><option value="coding">Coding</option><option value="multimodal">Multimodal</option><option value="open">Open weights</option></select></label>
+            <label><span>Sort</span><select id="sortFilter"><option value="release">Latest release</option><option value="name">Name</option><option value="context">Context length</option><option value="price">Input price</option></select></label>
+          </div>
+          <div class="directoryTabs" id="directoryTabs" role="tablist" aria-label="Model categories">
+            <button class="tab is-active" data-tab="all" role="tab" aria-selected="true">All models</button>
+            <button class="tab" data-tab="reasoning" role="tab" aria-selected="false">Reasoning</button>
+            <button class="tab" data-tab="coding" role="tab" aria-selected="false">Coding</button>
+            <button class="tab" data-tab="multimodal" role="tab" aria-selected="false">Multimodal</button>
+            <button class="tab" data-tab="open" role="tab" aria-selected="false">Open weights</button>
+            <button class="tab" data-tab="china" role="tab" aria-selected="false">Chinese models</button>
+          </div>
+          <div class="selectionBar" id="selectionBar" hidden><span><strong id="selectionCount">0</strong> selected</span><a class="btn btnPrimary" id="compareSelected" href="./compare.html">Compare selected</a><button class="btn" id="clearSelection" type="button">Clear</button></div>
+          <div class="modelGrid" id="modelGrid"></div>
+          <div class="pagination" id="pagination" aria-label="Directory pagination"></div>
+        </div>
       </section>
-
-      <div class="container" id="sections"></div>
 
       <footer class="footer">
         <div class="container footerInner">

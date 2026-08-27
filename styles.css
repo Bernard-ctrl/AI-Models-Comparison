@@ -31,7 +31,7 @@
   --header-height: 64px;
   
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-sans: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
 }
 
@@ -440,6 +440,46 @@ input[type="search"]::-moz-search-clear {
   font-weight: 500;
 }
 
+/* Model directory */
+.directorySection { background: rgba(255, 255, 255, 0.018); }
+.directoryHeader { display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+.eyebrow { color: var(--accent) !important; font-size: 11px !important; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px !important; }
+.directoryCount { color: var(--text-primary); font-family: var(--font-mono); font-size: 14px; padding-bottom: 5px; }
+.directoryTools { display: grid; grid-template-columns: minmax(240px, 2fr) repeat(4, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.directoryTools label { display: grid; gap: 5px; color: var(--text-secondary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.directoryTools input, .directoryTools select { width: 100%; min-width: 0; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 11px; font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0; outline: none; }
+.directoryTools input:focus, .directoryTools select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.directoryTabs { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 16px; }
+.tab { border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-secondary); padding: 8px 10px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.tab:hover, .tab.is-active { color: var(--text-primary); border-color: var(--accent); }
+.selectionBar { position: sticky; bottom: 16px; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 10px 12px; background: rgba(22, 27, 34, .94); border: 1px solid var(--accent); border-radius: var(--radius); box-shadow: 0 10px 32px rgba(0,0,0,.3); }
+.selectionBar[hidden] { display: none; }
+.taskSelection { position: static; margin: 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; box-shadow: none; }
+.rankCell { color: var(--accent) !important; font-family: var(--font-mono); font-weight: 700; }
+.btnPrimary { background: var(--accent); color: #07111f; border-color: var(--accent); }
+.btnPrimary:hover { background: #8ac2ff; color: #07111f; }
+.modelGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.modelCard { min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; transition: border-color .2s, transform .2s, background .2s; }
+.modelCard:hover, .modelCard.is-selected { border-color: var(--accent); background: var(--bg-card-hover); transform: translateY(-2px); }
+.modelCardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.modelCard h3 { margin: 0; color: var(--text-primary); font-size: 17px; line-height: 1.2; }
+.modelCard p { margin: 5px 0 0; color: var(--text-secondary); font-size: 12px; }
+.modelCard p span { color: var(--text-tertiary); }
+.selectModel { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--text-secondary); padding: 6px 8px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.modelCard.is-selected .selectModel { background: var(--accent); border-color: var(--accent); color: #07111f; }
+.modelTags { display: flex; flex-wrap: wrap; gap: 5px; margin: 14px 0; }
+.modelTags span { padding: 3px 6px; border: 1px solid var(--border); border-radius: 3px; color: var(--text-secondary); font-size: 10px; font-weight: 700; }
+.modelTags span:last-child { color: var(--warning-text); border-color: rgba(210,153,34,.35); }
+.modelCard dl { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; margin: 0; }
+.modelCard dt { color: var(--text-tertiary); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.modelCard dd { color: var(--text-primary); font-size: 12px; margin: 1px 0 0; overflow-wrap: anywhere; }
+.modelMore { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 12px; color: var(--text-secondary); font-size: 12px; }
+.modelMore a { display: inline-block; margin-top: 8px; }
+.modelCard summary { margin-top: 14px; color: var(--accent); cursor: pointer; font-size: 12px; font-weight: 700; }
+.pagination { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
+.pagination button { min-width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
+.pagination button:hover, .pagination button.is-active { border-color: var(--accent); color: var(--text-primary); background: var(--accent-glow); }
+
 /* Compare */
 .compareCard {
   background: var(--bg-card);
@@ -827,6 +867,12 @@ tr:hover td {
   .title {
     font-size: 32px;
   }
+
+  .directoryHeader { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .directoryTools { grid-template-columns: 1fr 1fr; }
+  .toolSearch { grid-column: 1 / -1; }
+  .modelGrid { grid-template-columns: 1fr; }
+  .selectionBar { align-items: stretch; flex-wrap: wrap; }
 
   .footerInner {
     flex-direction: column;

@@ -9,9 +9,37 @@
     modelsList: document.querySelector("#modelsList"),
     updated: document.querySelector("#updated"),
     overall: document.querySelector("#overall"),
+    directorySearch: document.querySelector("#directorySearch"),
+    providerFilter: document.querySelector("#providerFilter"),
+    regionFilter: document.querySelector("#regionFilter"),
+    focusFilter: document.querySelector("#focusFilter"),
+    sortFilter: document.querySelector("#sortFilter"),
+    directoryTabs: document.querySelector("#directoryTabs"),
+    modelGrid: document.querySelector("#modelGrid"),
+    directoryCount: document.querySelector("#directoryCount"),
+    pagination: document.querySelector("#pagination"),
+    selectionBar: document.querySelector("#selectionBar"),
+    selectionCount: document.querySelector("#selectionCount"),
+    compareSelected: document.querySelector("#compareSelected"),
+    clearSelection: document.querySelector("#clearSelection"),
   };
 
   const norm = (s) => (s ?? "").toString().trim().toLowerCase();
+  const displayValue = (value) => value === undefined || value === null || value === "" || value === "Not disclosed" ? "Not available" : value;
+  const hasValue = (value) => value !== undefined && value !== null && value !== "" && value !== "Not disclosed";
+  const canonicalName = (value) => norm(value).replace(/\s*\(.*?\)/g, "").replace(/\s+preview$/g, "");
+
+  function benchmarkEntries(model) {
+    const records = DATA.benchmarks || [];
+    const modelKeys = new Set([model.id, canonicalName(model.name), ...(model.aliases || []).map(canonicalName)]);
+    return records.filter((record) => modelKeys.has(record.modelId) || modelKeys.has(canonicalName(record.modelName || record.name)));
+  }
+
+  function benchmarkSummary(model) {
+    const records = benchmarkEntries(model);
+    if (records.length) return records.map((record) => `${record.name}: ${record.score}${record.date ? ` (${record.date})` : ""}${record.source ? ` [${new URL(record.source).hostname}]` : ""}`).join("; ");
+    return "No published score";
+  }
 
   const LEVEL_VALUES = new Set([
     "very high",
@@ -296,13 +324,14 @@
   }
 
   function renderModelsIncluded() {
+    if (!el.modelsList) return;
     const frag = document.createDocumentFragment();
-    DATA.modelsIncluded.forEach((name, i) => {
+    (DATA.modelCatalog || []).filter((model) => model.status === "Verified").forEach((model, i) => {
       const li = document.createElement("li");
 
       const left = document.createElement("span");
       left.className = "name";
-      left.textContent = name;
+      left.textContent = model.name;
 
       const right = document.createElement("span");
       right.className = "tag";
@@ -313,6 +342,112 @@
     });
 
     el.modelsList.append(frag);
+  }
+
+  function contextNumber(value) {
+    const match = String(value || "").match(/([\d.]+)\s*(K|M)?/i);
+    if (!match) return 0;
+    const multiplier = (match[2] || "").toUpperCase() === "M" ? 1000 : 1;
+    return Number(match[1]) * multiplier;
+  }
+
+  function priceNumber(value) {
+    const match = String(value || "").match(/\$([\d.]+)/);
+    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+  }
+
+  function renderDirectory() {
+    if (!el.modelGrid || !DATA.modelCatalog) return;
+    const catalog = DATA.modelCatalog.filter((model) => model.status === "Verified");
+    const state = { tab: "all", page: 1, selected: new Set() };
+    const pageSize = 12;
+
+    ["provider", "region"].forEach((key) => {
+      const select = el[`${key}Filter`];
+      [...new Set(catalog.map((model) => model[key]))].sort().forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = displayValue(value);
+        select.append(option);
+      });
+    });
+
+    function matchesFocus(model, focus) {
+      if (!focus || focus === "all") return true;
+      if (focus === "open") return model.weights === "Open-weight";
+      return Boolean(model[focus]);
+    }
+
+    function getFiltered() {
+      const query = norm(el.directorySearch.value);
+      const provider = el.providerFilter.value;
+      const region = el.regionFilter.value;
+      const focus = el.focusFilter.value;
+      const filtered = catalog.filter((model) => {
+        const haystack = norm(`${model.name} ${model.provider} ${model.region} ${model.type} ${model.modality} ${model.license}`);
+        const tabMatch = state.tab === "china" ? model.region === "China" : matchesFocus(model, state.tab === "all" ? "" : state.tab);
+        return (!query || haystack.includes(query)) && (!provider || model.provider === provider) && (!region || model.region === region) && tabMatch && matchesFocus(model, focus);
+      });
+      const sort = el.sortFilter.value;
+      return filtered.sort((a, b) => {
+        if (sort === "name") return a.name.localeCompare(b.name);
+        if (sort === "context") return contextNumber(b.context) - contextNumber(a.context);
+        if (sort === "price") return priceNumber(a.input) - priceNumber(b.input);
+        return String(b.release).localeCompare(String(a.release));
+      });
+    }
+
+    function updateSelection() {
+      el.selectionBar.hidden = state.selected.size === 0;
+      el.selectionCount.textContent = state.selected.size;
+      el.compareSelected.href = `./compare.html?models=${encodeURIComponent([...state.selected].join(","))}`;
+    }
+
+    function renderPage() {
+      const filtered = getFiltered();
+      const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      state.page = Math.min(state.page, pages);
+      const visible = filtered.slice((state.page - 1) * pageSize, state.page * pageSize);
+      el.directoryCount.textContent = `${filtered.length} model${filtered.length === 1 ? "" : "s"}`;
+      el.modelGrid.innerHTML = "";
+      visible.forEach((model) => {
+        const article = document.createElement("article");
+        article.className = "modelCard";
+        if (state.selected.has(model.id)) article.classList.add("is-selected");
+        const top = document.createElement("div");
+        top.className = "modelCardTop";
+        const title = document.createElement("div");
+        title.innerHTML = `<h3>${model.name}</h3><p>${model.provider} <span>·</span> ${model.region}</p>`;
+        const check = document.createElement("button");
+        check.type = "button";
+        check.className = "selectModel";
+        check.textContent = state.selected.has(model.id) ? "Selected" : "Compare";
+        check.setAttribute("aria-label", `${check.textContent} ${model.name}`);
+        check.addEventListener("click", () => {
+          if (state.selected.has(model.id)) state.selected.delete(model.id); else state.selected.add(model.id);
+          renderPage();
+          updateSelection();
+        });
+        top.append(title, check);
+        const tags = document.createElement("div");
+        tags.className = "modelTags";
+        [model.type, model.weights, model.status].forEach((tag) => { const span = document.createElement("span"); span.textContent = displayValue(tag); tags.append(span); });
+        const facts = document.createElement("dl");
+        [["Context", model.context], ["Input / 1M tokens", model.input], ["Output / 1M tokens", model.output], ["Benchmarks", benchmarkSummary(model)], ["Modalities", model.modality]].filter(([, value]) => hasValue(value) && value !== "Not available").forEach(([label, value]) => { const dt = document.createElement("dt"); dt.textContent = label; const dd = document.createElement("dd"); dd.textContent = displayValue(value); facts.append(dt, dd); });
+        const details = document.createElement("details");
+        const summary = document.createElement("summary"); summary.textContent = "More model details";
+        const more = document.createElement("div"); more.className = "modelMore"; more.textContent = [["Release", model.release], ["License", model.license], ["API", model.api], ["Tool calling", model.tools ? "Yes" : "No"]].filter(([, value]) => hasValue(value)).map(([label, value]) => `${label} ${value}`).join(" · ");
+        const source = document.createElement("a"); source.href = model.source; source.target = "_blank"; source.rel = "noreferrer"; source.textContent = "Open source reference"; more.append(source); details.append(summary, more);
+        article.append(top, tags, facts, details); el.modelGrid.append(article);
+      });
+      el.pagination.innerHTML = "";
+      for (let page = 1; page <= pages; page += 1) { const button = document.createElement("button"); button.type = "button"; button.textContent = page; button.className = page === state.page ? "is-active" : ""; button.setAttribute("aria-label", `Page ${page}`); button.addEventListener("click", () => { state.page = page; renderPage(); }); el.pagination.append(button); }
+    }
+
+    [el.directorySearch, el.providerFilter, el.regionFilter, el.focusFilter, el.sortFilter].forEach((control) => control.addEventListener("input", () => { state.page = 1; renderPage(); }));
+    el.directoryTabs.addEventListener("click", (event) => { const button = event.target.closest("button[data-tab]"); if (!button) return; state.tab = button.dataset.tab; state.page = 1; el.directoryTabs.querySelectorAll("button").forEach((tab) => { const active = tab === button; tab.classList.toggle("is-active", active); tab.setAttribute("aria-selected", String(active)); }); renderPage(); });
+    el.clearSelection.addEventListener("click", () => { state.selected.clear(); renderPage(); updateSelection(); });
+    renderPage(); updateSelection();
   }
 
   function renderOverall() {
@@ -372,9 +507,10 @@
     const frag = document.createDocumentFragment();
 
     const anchors = [
+      { href: "./index.html", label: "Directory" },
       { href: "./compare.html", label: "Compare" },
-      { href: "#overall", label: "Overall" },
-      ...DATA.sections.map((s) => ({ href: `#${s.id}`, label: s.title })),
+      { href: "./overall.html", label: "Quick picks" },
+      ...DATA.sections.map((s) => ({ href: `./${s.id}.html`, label: s.title })),
     ];
 
     anchors.forEach((a) => {
@@ -388,6 +524,7 @@
   }
 
   function renderSection(section) {
+    if (DATA.modelCatalog && document.body.dataset.section) return renderCatalogTaskLens(section);
     const container = document.createElement("section");
     container.className = "section";
     container.id = section.id;
@@ -470,9 +607,48 @@
     return container;
   }
 
+  function renderCatalogTaskLens(section) {
+    const container = document.createElement("section");
+    container.className = "section";
+    container.id = section.id;
+    const header = document.createElement("div");
+    header.className = "sectionHeader";
+    const h2 = document.createElement("h2"); h2.textContent = section.title;
+    const p = document.createElement("p"); p.textContent = `${section.subtitle}. Ranked by task capability signals; benchmark scores are shown when providers publish comparable results.`;
+    header.append(h2, p);
+    const selected = new Set();
+    const card = document.createElement("div"); card.className = "card tableCard";
+    const compareBar = document.createElement("div"); compareBar.className = "selectionBar taskSelection"; compareBar.hidden = true;
+    const compareText = document.createElement("span"); compareText.textContent = "0 selected";
+    const compareLink = document.createElement("a"); compareLink.className = "btn btnPrimary"; compareLink.href = "./compare.html"; compareLink.textContent = "Compare selected";
+    compareBar.append(compareText, compareLink);
+    const wrap = document.createElement("div"); wrap.className = "tableWrap";
+    const table = document.createElement("table"); table.setAttribute("aria-label", `${section.title} latest model comparison`);
+    const columns = ["Task rank", "Model", "Provider", "Benchmark signal", "Context", "Input / 1M tokens", "Output / 1M tokens", "Capabilities", "Compare"];
+    const head = document.createElement("thead"); const headRow = document.createElement("tr");
+    columns.forEach((column) => { const th = document.createElement("th"); th.textContent = column; headRow.append(th); }); head.append(headRow);
+    const eligible = DATA.modelCatalog.filter((model) => model.status === "Verified");
+    const body = document.createElement("tbody");
+    const taskWeight = section.id === "speed-cost" ? (model) => (model.input.includes("0.20") ? 5 : model.input.includes("0.30") ? 4 : model.input.includes("0.75") ? 3 : model.reasoning ? 2 : 1) : (model) => (model.reasoning ? 4 : 2) + (model.coding ? 2 : 0) + (model.multimodal ? 1 : 0) + (model.tools ? 1 : 0);
+    eligible.sort((a, b) => taskWeight(b) - taskWeight(a) || a.name.localeCompare(b.name)).forEach((model, index) => {
+      const row = document.createElement("tr");
+      const values = [`#${index + 1}`, model.name, model.provider, benchmarkSummary(model), model.context, model.input, model.output, [model.reasoning && "Reasoning", model.coding && "Coding", model.multimodal && "Multimodal", model.tools && "Tools"].filter(Boolean).join(", ")];
+      values.forEach((value, valueIndex) => { const cell = document.createElement("td"); cell.textContent = displayValue(value); if (valueIndex === 0 || valueIndex === 1) cell.className = valueIndex === 1 ? "modelCell" : "rankCell"; row.append(cell); });
+      const actionCell = document.createElement("td");
+      const action = document.createElement("button"); action.type = "button"; action.className = "selectModel"; action.textContent = "Compare"; action.setAttribute("aria-label", `Select ${model.name} for comparison`);
+      action.addEventListener("click", () => { if (selected.has(model.id)) selected.delete(model.id); else if (selected.size < 4) selected.add(model.id); action.textContent = selected.has(model.id) ? "Selected" : "Compare"; row.classList.toggle("is-selected", selected.has(model.id)); compareBar.hidden = selected.size === 0; compareText.textContent = `${selected.size} selected`; compareLink.href = `./compare.html?models=${encodeURIComponent([...selected].slice(0, 2).join(","))}`; });
+      actionCell.append(action); row.append(actionCell);
+      body.append(row);
+    });
+    table.append(head, body); wrap.append(table); card.append(compareBar, wrap); container.append(header, card); return container;
+  }
+
   function renderSections() {
+    if (!el.sections) return;
     const frag = document.createDocumentFragment();
-    DATA.sections.forEach((s) => frag.append(renderSection(s)));
+    const selectedId = document.body.dataset.section;
+    const sections = selectedId ? DATA.sections.filter((section) => section.id === selectedId) : DATA.sections;
+    sections.forEach((s) => frag.append(renderSection(s)));
     el.sections.append(frag);
   }
 
@@ -543,7 +719,8 @@
 
     renderNav();
     renderModelsIncluded();
-    renderOverall();
+    renderDirectory();
+    if (el.overall) renderOverall();
     renderSections();
     bindSearch();
 
