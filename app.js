@@ -41,6 +41,14 @@
     return "No published score";
   }
 
+  function benchmarkScore(model) {
+    const scores = benchmarkEntries(model)
+      .filter((record) => norm(record.name) === "livebench overall")
+      .map((record) => Number.parseFloat(record.score))
+      .filter(Number.isFinite);
+    return scores.length ? Math.max(...scores) : null;
+  }
+
   const LEVEL_VALUES = new Set([
     "very high",
     "high",
@@ -614,7 +622,7 @@
     const header = document.createElement("div");
     header.className = "sectionHeader";
     const h2 = document.createElement("h2"); h2.textContent = section.title;
-    const p = document.createElement("p"); p.textContent = `${section.subtitle}. Ranked by task capability signals; benchmark scores are shown when providers publish comparable results.`;
+    const p = document.createElement("p"); p.textContent = `${section.subtitle}. Ranked by the latest published LiveBench overall score; models without that benchmark are listed afterward using capability signals.`;
     header.append(h2, p);
     const selected = new Set();
     const card = document.createElement("div"); card.className = "card tableCard";
@@ -627,10 +635,19 @@
     const columns = ["Task rank", "Model", "Provider", "Benchmark signal", "Context", "Input / 1M tokens", "Output / 1M tokens", "Capabilities", "Compare"];
     const head = document.createElement("thead"); const headRow = document.createElement("tr");
     columns.forEach((column) => { const th = document.createElement("th"); th.textContent = column; headRow.append(th); }); head.append(headRow);
-    const eligible = DATA.modelCatalog.filter((model) => model.status === "Verified");
+    const eligible = [...(DATA.modelCatalog || [])];
     const body = document.createElement("tbody");
     const taskWeight = section.id === "speed-cost" ? (model) => (model.input.includes("0.20") ? 5 : model.input.includes("0.30") ? 4 : model.input.includes("0.75") ? 3 : model.reasoning ? 2 : 1) : (model) => (model.reasoning ? 4 : 2) + (model.coding ? 2 : 0) + (model.multimodal ? 1 : 0) + (model.tools ? 1 : 0);
-    eligible.sort((a, b) => taskWeight(b) - taskWeight(a) || a.name.localeCompare(b.name)).forEach((model, index) => {
+    eligible.sort((a, b) => {
+      const aScore = benchmarkScore(a);
+      const bScore = benchmarkScore(b);
+      if (aScore !== null || bScore !== null) {
+        if (aScore === null) return 1;
+        if (bScore === null) return -1;
+        if (aScore !== bScore) return bScore - aScore;
+      }
+      return taskWeight(b) - taskWeight(a) || a.name.localeCompare(b.name);
+    }).forEach((model, index) => {
       const row = document.createElement("tr");
       const values = [`#${index + 1}`, model.name, model.provider, benchmarkSummary(model), model.context, model.input, model.output, [model.reasoning && "Reasoning", model.coding && "Coding", model.multimodal && "Multimodal", model.tools && "Tools"].filter(Boolean).join(", ")];
       values.forEach((value, valueIndex) => { const cell = document.createElement("td"); cell.textContent = displayValue(value); if (valueIndex === 0 || valueIndex === 1) cell.className = valueIndex === 1 ? "modelCell" : "rankCell"; row.append(cell); });
