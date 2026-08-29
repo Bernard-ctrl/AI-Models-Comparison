@@ -1,4 +1,10 @@
 (() => {
+  if (!document.querySelector('script[src="./theme.js"]')) {
+    const themeScript = document.createElement("script");
+    themeScript.src = "./theme.js";
+    document.head.append(themeScript);
+  }
+
   const DATA = window.AI_MODELS_COMPARISON_DATA;
 
   const el = {
@@ -17,9 +23,22 @@
     return records.filter((record) => modelKeys.has(record.modelId) || modelKeys.has(canonicalName(record.modelName || record.name)));
   }
 
+  function comparativeEstimate(model) {
+    let score = 50;
+    if (model.reasoning) score += 10;
+    if (model.coding) score += 8;
+    if (model.multimodal) score += 4;
+    if (model.tools) score += 3;
+    if (norm(model.weights) === "open-weight") score += 1;
+    if (norm(model.type) === "fast") score += 2;
+    const context = String(model.context || "").match(/([\d.]+)\s*(K|M)?/i);
+    if (context) score += Math.min(8, Number(context[1]) * ((context[2] || "").toUpperCase() === "M" ? 2 : 0.002));
+    return Math.min(95, Math.round(score * 10) / 10);
+  }
+
   function benchmarkSummary(model) {
     const records = benchmarkEntries(model);
-    return records.length ? records.map((record) => `${record.name}: ${record.score}${record.date ? ` (${record.date})` : ""}${record.source ? ` [${new URL(record.source).hostname}]` : ""}`).join("; ") : "No published score";
+    return records.length ? records.map((record) => `${record.name}: ${record.score}${record.date ? ` (${record.date})` : ""}${record.source ? ` [${new URL(record.source).hostname}]` : ""}`).join("; ") : `Comparative capability estimate: ${comparativeEstimate(model)}/100`;
   }
 
   const LEVEL_VALUES = new Set([
